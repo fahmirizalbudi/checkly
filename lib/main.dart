@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
+import 'services/storage_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -8,7 +9,8 @@ void main() {
 }
 
 class ChecklyApp extends StatelessWidget {
-  const ChecklyApp({super.key});
+  final StorageService? storage;
+  const ChecklyApp({super.key, this.storage});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,7 @@ class ChecklyApp extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
         ),
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(storage: storage),
     );
   }
 }

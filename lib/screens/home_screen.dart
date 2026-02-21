@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final StorageService _storage;
-  bool _isLoading = true;
+  bool _isLoading = false;
   
   List<Todo> _todos = [];
   List<String> _categories = ['All', 'Work', 'Personal', 'Shopping', 'Fitness'];
