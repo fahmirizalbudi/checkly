@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -13,11 +14,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Todo> _todos = [
-    Todo(id: '1', title: 'Buy groceries', isDone: false),
-    Todo(id: '2', title: 'Finish design', isDone: true),
-    Todo(id: '3', title: 'Call mom', isDone: false),
-    Todo(id: '4', title: 'Reply emails', isDone: false),
-    Todo(id: '5', title: 'Team meeting', isDone: true),
+    Todo(id: '1', title: 'Buy groceries', isDone: false, category: 'Shopping'),
+    Todo(id: '2', title: 'Finish design', isDone: true, category: 'Work'),
+    Todo(id: '3', title: 'Call mom', isDone: false, category: 'Personal'),
+    Todo(id: '4', title: 'Reply emails', isDone: false, category: 'Work'),
+    Todo(id: '5', title: 'Team meeting', isDone: true, category: 'Work'),
   ];
 
   final List<String> _categories = ['All', 'Work', 'Personal', 'Shopping', 'Fitness'];
@@ -25,12 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final TextEditingController _taskController = TextEditingController();
 
-  void _addTodo(String title) {
+  void _addTodo(String title, {String? category}) {
     if (title.isNotEmpty) {
+      final selectedCategory = category ?? 
+          (_categories[_selectedCategoryIndex] == 'All' ? 'Personal' : _categories[_selectedCategoryIndex]);
+      
       setState(() {
         _todos.insert(0, Todo(
           id: DateTime.now().toString(),
           title: title,
+          category: selectedCategory,
         ));
       });
       _taskController.clear();
@@ -38,16 +43,101 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _toggleTodo(int index) {
-    setState(() {
-      _todos[index].isDone = !_todos[index].isDone;
-    });
+  void _toggleTodo(Todo todo) {
+    final index = _todos.indexOf(todo);
+    if (index != -1) {
+      setState(() {
+        _todos[index].isDone = !_todos[index].isDone;
+      });
+    }
   }
 
-  void _deleteTodo(int index) {
-    setState(() {
-      _todos.removeAt(index);
-    });
+  void _deleteTodo(Todo todo) {
+    final index = _todos.indexOf(todo);
+    if (index != -1) {
+      setState(() {
+        _todos.removeAt(index);
+      });
+    }
+  }
+
+  Future<String?> _showAddCategoryDialog() async {
+    final TextEditingController categoryController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          'New Category',
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width,
+          child: TextField(
+            controller: categoryController,
+            autofocus: true,
+            style: GoogleFonts.dmSans(fontSize: 15),
+            decoration: InputDecoration(
+              hintText: 'Category name',
+              hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 15),
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.dmSans(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, categoryController.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text(
+              'Add Category',
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddTaskSheet() {
@@ -55,84 +145,183 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'New Task',
-              style: GoogleFonts.dmSans(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E293B),
+      builder: (context) {
+        String selectedCategory = _categories[_selectedCategoryIndex] == 'All' 
+            ? 'Personal' 
+            : _categories[_selectedCategoryIndex];
+            
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _taskController,
-              autofocus: true,
-              style: GoogleFonts.dmSans(fontSize: 15),
-              decoration: InputDecoration(
-                hintText: 'What needs to be done?',
-                hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 15),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC), // Slate-50
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              onSubmitted: _addTodo,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () => _addTodo(_taskController.text),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'New Task',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
                   ),
-                  elevation: 0,
-                  padding: EdgeInsets.zero,
-                ),
-                child: Text(
-                  'Add Task',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _taskController,
+                    autofocus: true,
+                    style: GoogleFonts.dmSans(fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: 'What needs to be done?',
+                      hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 15),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onSubmitted: (value) => _addTodo(value, category: selectedCategory),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Category',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    icon: const Icon(
+                      cupertino.CupertinoIcons.chevron_down,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
+                    dropdownColor: Colors.white,
+                    elevation: 4,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    items: [
+                      ..._categories.where((c) => c != 'All').map((category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(
+                            category,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              color: const Color(0xFF1E293B),
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      }),
+                      DropdownMenuItem(
+                        value: 'ADD_NEW_CATEGORY_SPECIAL_VALUE',
+                        child: Row(
+                          children: [
+                            const Icon(cupertino.CupertinoIcons.add, size: 16, color: Color(0xFF3B82F6)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'New Category',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                color: const Color(0xFF3B82F6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) async {
+                      if (value == 'ADD_NEW_CATEGORY_SPECIAL_VALUE') {
+                        final newCategory = await _showAddCategoryDialog();
+                        if (newCategory != null && newCategory.isNotEmpty) {
+                          setState(() {
+                            if (!_categories.contains(newCategory)) {
+                              _categories.add(newCategory);
+                            }
+                          });
+                          setSheetState(() {
+                            selectedCategory = newCategory;
+                          });
+                        }
+                      } else if (value != null) {
+                        setSheetState(() {
+                          selectedCategory = value;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => _addTodo(_taskController.text, category: selectedCategory),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: Text(
+                        'Add Task',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -140,8 +329,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final formattedDate = DateFormat('EEEE, d MMMM').format(now);
-    final completedCount = _todos.where((t) => t.isDone).length;
-    final totalCount = _todos.length;
+    
+    final filteredTodos = _selectedCategoryIndex == 0
+        ? _todos
+        : _todos.where((t) => t.category == _categories[_selectedCategoryIndex]).toList();
+        
+    final completedCount = filteredTodos.where((t) => t.isDone).length;
+    final totalCount = filteredTodos.length;
     final progress = totalCount == 0 ? 0.0 : completedCount / totalCount;
     final percentage = (progress * 100).toInt();
 
@@ -158,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hello, John',
+                    'Checkly',
                     style: GoogleFonts.dmSans(
                       fontSize: 28, // Prominent greeting
                       fontWeight: FontWeight.bold,
@@ -348,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Task List (Full width, clean)
             Expanded(
-              child: _todos.isEmpty
+              child: filteredTodos.isEmpty
                   ? Center(
                       child: Text(
                         'No tasks for today',
@@ -360,12 +554,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4), // Consistent padding
-                      itemCount: _todos.length,
+                      itemCount: filteredTodos.length,
                       itemBuilder: (context, index) {
                         return TaskTile(
-                          todo: _todos[index],
-                          onToggle: () => _toggleTodo(index),
-                          onDelete: () => _deleteTodo(index),
+                          todo: filteredTodos[index],
+                          onToggle: () => _toggleTodo(filteredTodos[index]),
+                          onDelete: () => _deleteTodo(filteredTodos[index]),
                         );
                       },
                     ),
@@ -374,15 +568,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: SizedBox(
-        width: 56, // Standard FAB size
-        height: 56,
+        width: 48,
+        height: 48,
         child: FloatingActionButton(
           onPressed: _showAddTaskSheet,
-          backgroundColor: const Color(0xFF0F172A), // Dark primary (Slate-900) for contrast against white
+          backgroundColor: const Color(0xFF3B82F6),
           foregroundColor: Colors.white,
-          elevation: 4, // Subtle lift
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: const Icon(Icons.add, size: 28),
+          elevation: 0,
+          shape: const CircleBorder(),
+          child: const Icon(cupertino.CupertinoIcons.add, size: 24),
         ),
       ),
     );
