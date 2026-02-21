@@ -17,6 +17,13 @@
 
 Checkly is a modern, minimalist task management application built with Flutter. It helps you stay organized by tracking your daily tasks, categorizing them, and monitoring your progress with a beautiful, user-friendly interface designed for efficiency.
 
+## Preview
+
+<p align="center">
+  <img src="checkly-mockup.png" width="600" alt="Checly" />
+</p>
+
+
 ## Features
 
 - **Task Management:** Easily add, toggle, and delete tasks to keep your day organized.
