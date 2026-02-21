@@ -20,7 +20,7 @@ Checkly is a modern, minimalist task management application built with Flutter. 
 ## Preview
 
 <p align="center">
-  <img src="checkly-mockup.png" width="600" alt="Checly" />
+  <img src="checkly-mockup-2.png" width="600" alt="Checly" />
 </p>
 
 
