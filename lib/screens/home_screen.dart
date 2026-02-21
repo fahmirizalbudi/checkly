@@ -3,28 +3,55 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/todo.dart';
+import '../services/storage_service.dart';
 import '../widgets/task_tile.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final StorageService? storage;
+  const HomeScreen({super.key, this.storage});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Todo> _todos = [
-    Todo(id: '1', title: 'Buy groceries', isDone: false, category: 'Shopping'),
-    Todo(id: '2', title: 'Finish design', isDone: true, category: 'Work'),
-    Todo(id: '3', title: 'Call mom', isDone: false, category: 'Personal'),
-    Todo(id: '4', title: 'Reply emails', isDone: false, category: 'Work'),
-    Todo(id: '5', title: 'Team meeting', isDone: true, category: 'Work'),
-  ];
-
-  final List<String> _categories = ['All', 'Work', 'Personal', 'Shopping', 'Fitness'];
+  late final StorageService _storage;
+  bool _isLoading = true;
+  
+  List<Todo> _todos = [];
+  List<String> _categories = ['All', 'Work', 'Personal', 'Shopping', 'Fitness'];
   int _selectedCategoryIndex = 0;
 
   final TextEditingController _taskController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _storage = widget.storage ?? StorageService();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final loadedCategories = await _storage.getCategories();
+      final loadedTodos = await _storage.getTodos();
+      
+      if (mounted) {
+        setState(() {
+          _categories = loadedCategories;
+          _todos = loadedTodos;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _addTodo(String title, {String? category}) {
     if (title.isNotEmpty) {
@@ -38,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
           category: selectedCategory,
         ));
       });
+      _storage.saveTodos(_todos);
       _taskController.clear();
       Navigator.pop(context);
     }
@@ -49,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _todos[index].isDone = !_todos[index].isDone;
       });
+      _storage.saveTodos(_todos);
     }
   }
 
@@ -58,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _todos.removeAt(index);
       });
+      _storage.saveTodos(_todos);
     }
   }
 
@@ -278,6 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           setState(() {
                             if (!_categories.contains(newCategory)) {
                               _categories.add(newCategory);
+                              _storage.saveCategories(_categories);
                             }
                           });
                           setSheetState(() {
@@ -327,6 +358,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+        ),
+      );
+    }
+
     final now = DateTime.now();
     final formattedDate = DateFormat('EEEE, d MMMM').format(now);
     
